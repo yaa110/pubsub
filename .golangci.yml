@@ -1,0 +1,35 @@
+run:
+  concurrency: 0
+  timeout: 15m
+  allow-parallel-runners: true
+
+issues:
+  exclude-use-default: false
+linters:
+  disable-all: true
+  enable:
+    - bidichk
+    - bodyclose
+    - containedctx
+    - dupl
+    - errcheck
+    - copyloopvar
+    - gci
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - inamedparam
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - staticcheck
+    - tenv
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
