@@ -4,7 +4,7 @@ $(LOCALBIN):
 
 .PHONY: test
 test:
-	go test -cover -race ./...
+	go test -coverprofile=coverage.txt -cover -race ./...
 
 .PHONY: lint
 lint: golangci-lint
