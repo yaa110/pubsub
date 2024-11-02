@@ -1,6 +1,6 @@
 # PubSub for Golang
 
-[![Test](https://github.com/yaa110/pubsub/actions/workflows/test.yaml/badge.svg)](https://github.com/yaa110/pubsub/actions/workflows/test.yaml) [![godoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/yaa110/pubsub)
+[![Test](https://github.com/yaa110/pubsub/actions/workflows/test.yaml/badge.svg)](https://github.com/yaa110/pubsub/actions/workflows/test.yaml) [![goreportcard](https://img.shields.io/badge/go%20report-A%2B-brightgreen.svg)](http://goreportcard.com/report/yaa110/pubsub) [![License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/yaa110/pubsub/blob/master/LICENSE) [![godoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/yaa110/pubsub)
 
 This package provides an internal PubSub system for Golang, allowing messages to be published and subscribed to.
 
