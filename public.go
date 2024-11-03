@@ -45,21 +45,34 @@ func Publish[T any](m *T) {
 }
 
 // Subscribe subscribes `sub` to a PubSub instance.
-// `sub` can be a `pubsub.Receiver` or `chan *T`.
+// `sub` can be a `pubsub.Receiver` or `chan *T`, otherwise panics.
 // This method is thread-safe.
-func Subscribe[T any, PT interface{ *T }](sub any) error {
-	subscriber, err := newSubscriber[T](sub)
+func Subscribe[T any, PT interface{ *T }](sub any) SubscribeDescriptor {
+	sd, err := newSubscriber[T](sub)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if global != nil {
-		global.subscribe(subscriber)
+		global.subscribe(sd)
 	} else if name := os.Getenv(isolateEnv); name != "" {
 		if ps, ok := isolations.Load(name); ok {
-			ps.(*pubSub).subscribe(subscriber)
+			ps.(*pubSub).subscribe(sd)
 		}
 	}
-	return nil
+	return sd
+}
+
+// Unsubscribe removes `sub` from a PubSub instance.
+// `sub` can be a `pubsub.Receiver` or `chan *T`.
+// This method is thread-safe.
+func Unsubscribe(sd SubscribeDescriptor) {
+	if global != nil {
+		global.unsubscribe(sd)
+	} else if name := os.Getenv(isolateEnv); name != "" {
+		if ps, ok := isolations.Load(name); ok {
+			ps.(*pubSub).unsubscribe(sd)
+		}
+	}
 }
 
 func uuid4() string {

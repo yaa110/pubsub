@@ -30,13 +30,16 @@ func (d *CustomReceiver) Receive(msg *CustomMessage) {
 - Subscribe for a type of messages:
 
 ```go
-// Using a channel as subscriber
+// Using a channel as subscriber.
 chn := make(chan *CustomMessage)
-pubsub.Subscribe[CustomMessage](chn)
+sd1 := pubsub.Subscribe[CustomMessage](chn) // returns a descriptor
 
-// Using a custom receiver as subscriber
+// Using a custom receiver as subscriber.
 receiver := &CustomReceiver{}
-pubsub.Subscribe[CustomMessage](receiver)
+sd2 := pubsub.Subscribe[CustomMessage](receiver)
+
+// Unsubscribe using the descriptor.
+pubsub.Unsubscribe(sd1)
 ```
 
 **Note** that a topic is automatically created for each message type, allowing all subscribers of that message type to receive the published messages.

@@ -1,6 +1,7 @@
 package pubsub_test
 
 import (
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -10,41 +11,43 @@ import (
 )
 
 func TestPubSub1(t *testing.T) {
-	pubsub.Isolate(t)
-	assert := gomega.NewWithT(t)
+	for _, isolate := range []bool{false, true} {
+		if isolate {
+			pubsub.Isolate(t)
+		}
 
-	chn := make(chan *int, 1)
-	recv := &dummyReceiver[int]{}
-	err := pubsub.Subscribe[int](chn)
-	assert.Expect(err).NotTo(gomega.HaveOccurred())
-	err = pubsub.Subscribe[int](recv)
-	assert.Expect(err).NotTo(gomega.HaveOccurred())
+		assert := gomega.NewWithT(t)
 
-	pubsub.Publish(pointer(1))
+		chn := make(chan *int, 1)
+		recv := &dummyReceiver[int]{}
+		chnSD := pubsub.Subscribe[int](chn)
+		assert.Expect(chnSD).NotTo(gomega.BeNil())
+		recvSD := pubsub.Subscribe[int](recv)
+		assert.Expect(recvSD).NotTo(gomega.BeNil())
 
-	assert.Expect(*<-chn).To(gomega.Equal(1))
-	assert.Eventually(func() int {
-		return recv.Read()
-	}, 10*time.Second, 250*time.Millisecond).Should(gomega.Equal(1))
-}
+		pubsub.Publish(pointer(1))
 
-func TestPubSub2(t *testing.T) {
-	pubsub.Isolate(t)
-	assert := gomega.NewWithT(t)
+		assert.Expect(*<-chn).To(gomega.Equal(1))
+		assert.Eventually(func() int {
+			return recv.Read()
+		}, 10*time.Second, 250*time.Millisecond).Should(gomega.Equal(1))
 
-	chn := make(chan *int, 1)
-	recv := &dummyReceiver[int]{}
-	err := pubsub.Subscribe[int](chn)
-	assert.Expect(err).NotTo(gomega.HaveOccurred())
-	err = pubsub.Subscribe[int](recv)
-	assert.Expect(err).NotTo(gomega.HaveOccurred())
+		pubsub.Unsubscribe(chnSD)
+		pubsub.Publish(pointer(2))
 
-	pubsub.Publish(pointer(3))
+		assert.Eventually(func() int {
+			return recv.Read()
+		}, 10*time.Second, 250*time.Millisecond).Should(gomega.Equal(2))
 
-	assert.Expect(*<-chn).To(gomega.Equal(3))
-	assert.Eventually(func() int {
-		return recv.Read()
-	}, 10*time.Second, 250*time.Millisecond).Should(gomega.Equal(3))
+		assert.Expect(func() error {
+			select {
+			case <-chn:
+				return errors.New("unsubscribe failed")
+			case <-time.After(time.Second):
+				return nil
+			}
+		}()).Should(gomega.Succeed())
+	}
 }
 
 type dummyReceiver[T any] struct {

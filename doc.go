@@ -3,9 +3,10 @@
 // Example usage:
 //
 //	chn := make(chan *int, 1)
-//	pubsub.Subscribe[int](chn)
+//	sd := pubsub.Subscribe[int](chn)
 //	pubsub.Publish(pointer(1))
 //	assert(*<-chn, 1)
+//	pubsub.Unsubscribe(sd)
 //
 // For additional examples and receivers, please refer to the README file.
 package pubsub

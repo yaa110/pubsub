@@ -7,24 +7,29 @@ import (
 )
 
 type pubSub struct {
-	subscribers map[string][]subscriber
+	subscribers map[string]map[uint64]SubscribeDescriptor
 	lock        sync.RWMutex
+	lastID      uint64
 }
 
-type subscriber interface {
+type SubscribeDescriptor interface {
 	message
 	receive(i interface {
 		message
 		intoInner
 	})
+	setID(id uint64)
+	ID() uint64
 }
 
 type receiver[T any, PT interface{ *T }] struct {
 	receiver Receiver[T, PT]
+	id       uint64
 }
 
 type channel[T any, PT interface{ *T }] struct {
 	chn chan PT
+	id  uint64
 }
 
 type message interface {
@@ -42,12 +47,12 @@ type msg[T any] struct {
 // create creates a create instance of pubsub to publish messages and receive them.
 func create() *pubSub {
 	return &pubSub{
-		subscribers: make(map[string][]subscriber),
+		subscribers: make(map[string]map[uint64]SubscribeDescriptor),
 	}
 }
 
 // newSubscriber converts a channel or a receiver to a subscriber to receive incoming messages.
-func newSubscriber[T any, PT interface{ *T }](sub any) (subscriber, error) {
+func newSubscriber[T any, PT interface{ *T }](sub any) (SubscribeDescriptor, error) {
 	switch s := sub.(type) {
 	case chan PT:
 		return &channel[T, PT]{
@@ -62,13 +67,31 @@ func newSubscriber[T any, PT interface{ *T }](sub any) (subscriber, error) {
 	}
 }
 
-func (p *pubSub) subscribe(sub subscriber) {
-	topic := sub.topic()
+func (p *pubSub) subscribe(sd SubscribeDescriptor) {
+	topic := sd.topic()
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	p.subscribers[topic] = append(p.subscribers[topic], sub)
+	id := p.lastID
+	sd.setID(id)
+	p.lastID++
+
+	if _, ok := p.subscribers[topic]; !ok {
+		p.subscribers[topic] = make(map[uint64]SubscribeDescriptor)
+	}
+	p.subscribers[topic][id] = sd
+}
+
+func (p *pubSub) unsubscribe(sd SubscribeDescriptor) {
+	topic := sd.topic()
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if _, ok := p.subscribers[topic]; ok {
+		delete(p.subscribers[topic], sd.ID())
+	}
 }
 
 func (p *pubSub) publish(m interface {
@@ -95,6 +118,22 @@ func (w *channel[T, PT]) receive(m interface {
 	intoInner
 }) {
 	w.chn <- m.inner().(PT)
+}
+
+func (w *receiver[T, PT]) ID() uint64 {
+	return w.id
+}
+
+func (w *channel[T, PT]) ID() uint64 {
+	return w.id
+}
+
+func (w *receiver[T, PT]) setID(id uint64) {
+	w.id = id
+}
+
+func (w *channel[T, PT]) setID(id uint64) {
+	w.id = id
 }
 
 func (w *receiver[T, PT]) topic() string {
