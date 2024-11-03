@@ -27,7 +27,7 @@ func (d *CustomReceiver) Receive(msg *CustomMessage) {
 }
 ```
 
-- Subscribe for a type of messages:
+- Subscribe/Unsubscribe for a type of message:
 
 ```go
 // Using a channel as subscriber.
@@ -61,7 +61,7 @@ chn := make(chan *int, 1) // also a custom receiver can be used to receive *int 
 pubsub.Subscribe[int](chn)
 assert(*<-chn, 2)
 
-pubsub.Publish(pointer(2)) // publishes to a *int topic
+pubsub.Publish(pointer(2)) // publishes to "int" topic
 
 func pointer[T any](t T) *T {
     return &t
@@ -69,6 +69,13 @@ func pointer[T any](t T) *T {
 ```
 
 **Note** that published messages will only be received by subscribers that were subscribed prior to the message being published.
+
+A single instance of pubsub can handle publishing and subscribing for multiple message types:
+
+```go
+pubsub.Publish(pointer(2))      // publishes to "int" topic
+pubsub.Publish(pointer("test")) // publishes to "string" topic
+```
 
 ## Test Isolation
 
