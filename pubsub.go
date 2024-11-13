@@ -10,6 +10,7 @@ type pubSub struct {
 	subscribers map[string]map[uint64]SubscribeDescriptor
 	lock        sync.RWMutex
 	lastID      uint64
+	freeIDs     []uint64
 }
 
 type SubscribeDescriptor interface {
@@ -67,16 +68,24 @@ func newSubscriber[T any, PT interface{ *T }](sub any) (SubscribeDescriptor, err
 	}
 }
 
+func (p *pubSub) allocateID() uint64 {
+	var id uint64
+	if len(p.freeIDs) > 0 {
+		id, p.freeIDs = p.freeIDs[0], p.freeIDs[1:]
+	} else {
+		id = p.lastID
+		p.lastID++
+	}
+	return id
+}
+
 func (p *pubSub) subscribe(sd SubscribeDescriptor) {
 	topic := sd.topic()
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	id := p.lastID
-	sd.setID(id)
-	p.lastID++
-
+	id := p.allocateID()
 	if _, ok := p.subscribers[topic]; !ok {
 		p.subscribers[topic] = make(map[uint64]SubscribeDescriptor)
 	}
@@ -89,6 +98,7 @@ func (p *pubSub) unsubscribe(sd SubscribeDescriptor) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	p.freeIDs = append(p.freeIDs, sd.ID())
 	if _, ok := p.subscribers[topic]; ok {
 		delete(p.subscribers[topic], sd.ID())
 	}

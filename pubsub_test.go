@@ -10,7 +10,7 @@ import (
 	"github.com/yaa110/pubsub"
 )
 
-func TestPubSub1(t *testing.T) {
+func TestPubSub(t *testing.T) {
 	for _, isolate := range []bool{false, true} {
 		if isolate {
 			pubsub.Isolate(t)
@@ -47,6 +47,16 @@ func TestPubSub1(t *testing.T) {
 				return nil
 			}
 		}()).Should(gomega.Succeed())
+	}
+}
+
+func TestPubSubDescriptor(t *testing.T) {
+	assert := gomega.NewWithT(t)
+	c := make(chan *int)
+	for i := 0; i < 1000; i++ {
+		sd := pubsub.Subscribe[int](c)
+		assert.Expect(sd.ID()).To(gomega.Equal(uint64(0)))
+		pubsub.Unsubscribe(sd)
 	}
 }
 
